@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cessna Helper Web — POH Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root{--bg:#0b1120;--panel:#1e293b;--text:#f8fafc;--muted:#94a3b8;--accent:#3b82f6;--green:#10b981;--red:#ef4444;--amber:#f59e0b;--border:#334155;--input-bg:#0f172a;}
+*{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden;}
+.sidebar{width:260px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0;position:fixed;height:100vh;overflow-y:auto;}
+.logo{padding:0 20px 20px;font-size:20px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:10px;}
+.nav-btn{background:transparent;border:none;color:var(--muted);padding:14px 20px;text-align:left;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;border-left:4px solid transparent;display:flex;align-items:center;gap:10px;}
+.nav-btn:hover{background:rgba(59,130,246,.1);color:var(--text);}
+.nav-btn.active{background:rgba(59,130,246,.15);color:var(--accent);border-left-color:var(--accent);}
+.main-content{margin-left:260px;padding:30px;flex:1;width:calc(100% - 260px);}
+.tab-content{display:none;animation:fadeIn .3s;}
+.tab-content.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.card{background:var(--panel);border-radius:12px;padding:25px;border:1px solid var(--border);margin-bottom:20px;box-shadow:0 4px 6px -1px rgba(0,0,0,.2);}
+.card-header{font-size:15px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;letter-spacing:.5px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:25px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;}
+.grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:20px;}
+.input-group{display:flex;flex-direction:column;gap:8px;margin-bottom:15px;}
+label{font-size:13px;color:var(--muted);font-weight:500;}
+input[type="text"],input[type="number"],select{background:var(--input-bg);border:1px solid var(--border);color:var(--text);padding:12px 14px;border-radius:8px;font-size:15px;outline:none;transition:border .2s;font-family:'JetBrains Mono',monospace;}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.2);}
+input[readonly]{color:var(--muted);background:#0f172a;border-color:#1e293b;}
+input[type="range"]{width:100%;accent-color:var(--accent);height:8px;margin-top:8px;}
+.icao-input{text-transform:uppercase;}
+.btn{background:var(--accent);color:white;border:none;padding:12px 20px;border-radius:8px;font-weight:600;cursor:pointer;transition:background .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;}
+.btn:hover{background:#2563eb;}
+.btn-green{background:var(--green);}.btn-green:hover{background:#059669;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+.btn-outline:hover{background:var(--border);}
+table{width:100%;border-collapse:collapse;margin-bottom:15px;}
+th{background:var(--input-bg);color:var(--muted);font-size:13px;font-weight:600;padding:12px;text-align:center;border:1px solid var(--border);}
+td{border:1px solid var(--border);padding:6px;}
+td input{width:100%;border:none;background:transparent;text-align:center;padding:8px;font-size:14px;}
+td input:focus{box-shadow:inset 0 0 0 1px var(--accent);border-radius:4px;}
+.results-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-top:20px;}
+.res-box{background:var(--input-bg);padding:15px;border-radius:8px;border:1px solid var(--border);text-align:center;}
+.res-box span{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
+.res-box strong{font-size:22px;color:var(--text);font-family:'JetBrains Mono',monospace;}
+.status-box{padding:15px;border-radius:8px;text-align:center;font-size:16px;font-weight:600;margin-top:15px;}
+.status-ok{background:rgba(16,185,129,.1);color:var(--green);border:1px solid var(--green);}
+.status-warn{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid var(--amber);}
+.status-err{background:rgba(239,68,68,.1);color:var(--red);border:1px solid var(--red);}
+.text-red{color:var(--red)!important;}.text-amber{color:var(--amber)!important;}.text-green{color:var(--green)!important;}
+.conv-inputs{display:flex;align-items:center;gap:15px;margin-bottom:20px;}
+.conv-inputs input{flex:1;font-size:20px;text-align:center;}
+.conv-result{font-size:28px;font-weight:700;color:var(--green);text-align:center;font-family:'JetBrains Mono',monospace;padding:15px;background:var(--input-bg);border-radius:8px;}
+.proc-layout{display:grid;grid-template-columns:300px 1fr;gap:25px;align-items:start;}
+.proc-nav{display:flex;flex-direction:column;gap:5px;position:sticky;top:30px;max-height:calc(100vh - 60px);overflow-y:auto;}
+.proc-nav button{background:var(--panel);border:1px solid var(--border);color:var(--muted);padding:12px 15px;text-align:left;border-radius:8px;cursor:pointer;font-weight:500;transition:all .2s;}
+.proc-nav button:hover{border-color:var(--accent);color:var(--text);}
+.proc-nav button.active{background:rgba(59,130,246,.15);border-color:var(--accent);color:var(--accent);}
+.proc-list{display:flex;flex-direction:column;gap:10px;}
+.proc-item{display:flex;align-items:flex-start;gap:15px;background:var(--input-bg);padding:15px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.proc-item:hover{border-color:var(--accent);}
+.proc-item input[type="checkbox"]{width:22px;height:22px;cursor:pointer;accent-color:var(--green);margin-top:2px;}
+.proc-text{flex:1;font-size:15px;line-height:1.5;}
+.proc-action{font-weight:600;color:var(--text);}
+.proc-resp{color:var(--accent);font-weight:700;margin-left:8px;}
+.proc-item.done{opacity:.4;background:transparent;}
+.proc-item.done .proc-text{text-decoration:line-through;}
+.proc-section-title{font-weight:700;color:var(--amber);margin-top:25px;margin-bottom:10px;font-size:18px;border-bottom:1px solid var(--border);padding-bottom:5px;}
+.proc-note{font-size:13px;color:var(--muted);font-style:italic;padding:10px 15px;}
+/* Скрываем кнопки и навигацию при печати в PDF */
+.no-print { display: block; }
+@media print { .no-print, .sidebar { display: none !important; } .main-content { margin-left: 0 !important; width: 100% !important; } }
+@media (max-width:900px){
+body{flex-direction:column;}
+.sidebar{width:100%;height:auto;position:relative;flex-direction:row;overflow-x:auto;padding:10px;border-right:none;border-bottom:1px solid var(--border);}
+.logo{padding:0 10px;font-size:16px;white-space:nowrap;}
+.nav-btn{padding:10px 15px;white-space:nowrap;border-left:none;border-bottom:3px solid transparent;}
+.nav-btn.active{border-left:none;border-bottom-color:var(--accent);}
+.main-content{margin-left:0;width:100%;padding:15px;}
+.grid-2,.grid-3,.grid-4,.proc-layout{grid-template-columns:1fr;}
+.proc-nav{position:static;flex-direction:row;overflow-x:auto;max-height:none;padding-bottom:10px;}
+.proc-nav button{white-space:nowrap;}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar no-print">
+<div class="logo">✈ Cessna Helper POH</div>
+<button class="nav-btn active" onclick="switchTab('plan')">📋 Полётный план</button>
+<button class="nav-btn" onclick="switchTab('converters')">📐 Конвертеры</button>
+<button class="nav-btn" onclick="switchTab('vspeeds')">🚀 V-скорости</button>
+<button class="nav-btn" onclick="switchTab('normal')">✅ Normal Procedures</button>
+<button class="nav-btn" onclick="switchTab('emergency')">🚨 Emergency Procedures</button>
+</div>
+
+<div class="main-content">
+
+<!-- TAB: FLIGHT PLAN -->
+<div id="tab-plan" class="tab-content active">
+<div class="card no-print">
+<div class="card-header">Управление планом</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;">
+<button class="btn" onclick="savePlan()">💾 Сохранить</button>
+<button class="btn btn-outline" onclick="document.getElementById('file-input').click()">📂 Загрузить</button>
+<input type="file" id="file-input" style="display:none" accept=".json" onchange="loadPlan(event)">
+<button class="btn btn-green" onclick="downloadPDF()">📄 Скачать в PDF</button>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">Аэропорты и METAR</div>
+<div class="grid-3">
+<div class="input-group"><label>Вылет (ICAO)</label><input type="text" class="icao-input" id="dep-icao" placeholder="URMT" oninput="recalcPlan()"></div>
+<div class="input-group"><label>Прилёт (ICAO)</label><input type="text" class="icao-input" id="arr-icao" placeholder="URMM" oninput="recalcPlan()"></div>
+<div class="input-group"><label>Запасной (ICAO)</label><input type="text" class="icao-input" id="alt-icao" placeholder="URRP" oninput="recalcPlan()"></div>
+</div>
+<div class="input-group">
+<label>METAR (Ветер, Темп, QNH) — MPS автоматически переводится в узлы</label>
+<div style="display:flex;gap:10px;">
+<input type="text" id="metar-input" placeholder="URMT 171200Z 28005MPS 9999 18/10 Q1015" style="flex:1;">
+<button class="btn no-print" onclick="applyMetar()">ОК</button>
+</div>
+<div id="metar-status" style="font-size:12px;color:var(--muted);">Не введен</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">Параметры полёта (POH Fig. 5-8)</div>
+<div class="grid-4">
+<div class="input-group">
+<label>Режим крейсера (RPM, 2200-2700)</label>
+<input type="number" id="fp-rpm" value="2500" min="2200" max="2700" step="10" oninput="recalcPlan()">
+<div id="rpm-info" style="font-size:12px;color:var(--muted);min-height:16px;"></div>
+</div>
+<div class="input-group"><label>Высота крейсера (ft)</label><input type="number" id="fp-alt" value="8000" min="0" max="12000" step="500" oninput="recalcPlan()"></div>
+<div class="input-group">
+<label>Единицы дистанции</label>
+<select id="dist-unit" onchange="updateDistHeaders(); recalcPlan()">
+<option value="NM">Морские мили (NM)</option>
+<option value="km">Километры (km)</option>
+</select>
+<div style="font-size:11px;color:var(--muted);margin-top:4px;">Вводите в выбранных единицах.</div>
+</div>
+<div class="input-group">
+<label>Топливо на борту (gal)</label>
+<input type="range" id="fp-fuel-range" min="0" max="56" step="0.5" value="53" oninput="setFuel(this.value)">
+<div style="position: relative; height: 16px; font-size: 11px; color: var(--muted); margin-top: 4px; margin-bottom: 10px;">
+<span style="position: absolute; left: 0; transform: translateX(0);">0</span>
+<span style="position: absolute; left: 47.3%; transform: translateX(-50%);">26.5</span>
+<span style="position: absolute; left: 94.6%; transform: translateX(-100%); color: var(--amber); font-weight: 600;">53 usable</span>
+<span style="position: absolute; right: 0; transform: translateX(0);">56 full</span>
+</div>
+<div style="text-align:center;display:flex;gap:8px;align-items:center;justify-content:center;">
+<input type="number" id="fp-fuel" value="53" min="0" max="56" step="0.5" oninput="setFuel(this.value)" style="width:90px;text-align:center;font-size:16px;">
+<span>gal</span>
+</div>
+<div id="fuel-warn" style="font-size:11px;text-align:center;margin-top:6px;height:14px;"></div>
+</div>
+</div>
+</div>
+
+<div class="grid-2">
+<div class="card">
+<div class="card-header">Основной маршрут</div>
+<table id="route-table">
+<thead><tr><th>Точка</th><th>ЗМПУ</th><th id="th-dist-route">Расст (NM)</th><th>Ветер</th><th>Корр.Курс</th><th>GS</th><th>Время</th></tr></thead>
+<tbody></tbody>
+</table>
+<div style="display:flex;gap:10px;" class="no-print">
+<button class="btn btn-outline" onclick="addRouteRow()">+ Строка</button>
+<button class="btn btn-outline" onclick="delRow('route-table')">- Строка</button>
+</div>
+<div class="results-grid">
+<div class="res-box"><span>Дальность (крейсер)</span><strong id="res-total-dist">—</strong></div>
+<div class="res-box"><span>Время (ETE)</span><strong id="res-total-time">—</strong></div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">Маршрут до запасного</div>
+<table id="alt-route-table">
+<thead><tr><th>Точка</th><th>ЗМПУ</th><th id="th-dist-alt">Расст (NM)</th><th>Ветер</th><th>Корр.Курс</th><th>GS</th><th>Время</th></tr></thead>
+<tbody></tbody>
+</table>
+<div style="display:flex;gap:10px;" class="no-print">
+<button class="btn btn-outline" onclick="addAltRouteRow()">+ Строка</button>
+<button class="btn btn-outline" onclick="delRow('alt-route-table')">- Строка</button>
+</div>
+<div class="results-grid">
+<div class="res-box"><span>Дальность (Alt)</span><strong id="res-alt-dist">—</strong></div>
+<div class="res-box"><span>Время (Alt)</span><strong id="res-alt-time">—</strong></div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">Топливо (POH Section 5)</div>
+<div style="text-align:center;margin-bottom:20px;">
+<span style="font-size:14px;color:var(--muted);text-transform:uppercase;">Крейсер: <span id="perf-display">2500 RPM / 8000 ft → 65% MCP / 114 KTAS / 9.1 GPH</span></span>
+<strong id="res-gph" style="font-size:28px;color:var(--accent);display:block;margin-top:5px;">9.10 GPH</strong>
+</div>
+<div class="results-grid">
+<div class="res-box"><span>Запуск/руление/взлёт</span><strong id="res-fuel-taxi">1.4 gal</strong></div>
+<div class="res-box"><span>Набор (Fig. 5-7)</span><strong id="res-fuel-climb">—</strong></div>
+<div class="res-box"><span>Крейсер</span><strong id="res-fuel-trip">—</strong></div>
+<div class="res-box"><span>На запасной</span><strong id="res-fuel-alt">—</strong></div>
+<div class="res-box"><span>Резерв (45 мин)</span><strong id="res-fuel-resv">—</strong></div>
+<div class="res-box" style="border-color:var(--accent);"><span>ВСЕГО НУЖНО</span><strong id="res-fuel-total" style="color:var(--accent);">—</strong></div>
+<div class="res-box"><span>Остаток по прилёту</span><strong id="res-fuel-rem">—</strong></div>
+</div>
+<div id="fuel-status" class="status-box status-ok">Введите данные маршрута</div>
+</div>
+
+<div class="card">
+<div class="card-header">
+<span>Вес и Центровка (POH Section 6)</span>
+<div style="display:flex; align-items:center; gap:10px; font-size:12px; font-weight:normal; text-transform:none; letter-spacing:0;">
+<span style="color:var(--muted);">Единицы ввода:</span>
+<select id="wb-unit" onchange="convertWbUnits(this.value)" style="padding:4px 8px; font-size:13px; margin-bottom:0; width:80px; height: 28px;">
+<option value="lbs">lbs</option>
+<option value="kg">kg</option>
+</select>
+</div>
+</div>
+<div class="grid-2">
+<div>
+<table id="wb-table">
+<thead><tr><th>Элемент</th><th id="wb-th-weight">Вес (lbs)</th><th>ARM</th><th>Момент</th></tr></thead>
+<tbody>
+<tr><td>Пустой самолёт</td><td><input type="number" id="wb-empty-w" value="1663" readonly></td><td>39.5</td><td><span id="mom-empty">65688</span></td></tr>
+<tr><td>Пилот / Передний</td><td><input type="number" class="wb-w" value="0" oninput="recalcPlan()"></td><td>37.0</td><td><span id="mom-front">0</span></td></tr>
+<tr><td>Задние пассажиры</td><td><input type="number" class="wb-w" value="0" oninput="recalcPlan()"></td><td>73.0</td><td><span id="mom-rear">0</span></td></tr>
+<tr><td>Багаж A (max 120 lb)</td><td><input type="number" class="wb-w" value="0" oninput="recalcPlan()"></td><td>95.0</td><td><span id="mom-bagA">0</span></td></tr>
+<tr><td>Багаж B (max 50 lb)</td><td><input type="number" class="wb-w" value="0" oninput="recalcPlan()"></td><td>123.0</td><td><span id="mom-bagB">0</span></td></tr>
+<tr><td>Топливо (6 lb/gal)</td><td><input type="text" id="wb-fuel-w" readonly value="0"></td><td>48.0</td><td><span id="mom-fuel">0</span></td></tr>
+</tbody>
+</table>
+<div style="font-size:12px;color:var(--muted);margin-top:10px;">Ограничения (в lbs): ramp 2558, takeoff 2550, landing 2550. Багаж A+B ≤ 120.</div>
+</div>
+<div>
+<div id="wb-status" class="status-box status-ok" style="margin-top:0;">Ожидание данных...</div>
+<div class="res-box" style="margin-top:15px;text-align:left;">
+<span>Взлётный вес (max 2550 lbs)</span>
+<strong id="res-total-weight" style="display:block;margin-top:5px;">—</strong>
+</div>
+<div class="res-box" style="margin-top:15px;text-align:left;">
+<span>Положение ЦГ — нормальная категория</span>
+<strong id="res-cg" style="display:block;margin-top:5px;">—</strong>
+</div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">
+<span>Взлётно-посадочные характеристики (POH Fig. 5-5 / 5-11)</span>
+<span id="perf-weight-display" style="font-size:14px; color:var(--accent); text-transform:none; letter-spacing:0;">Вес: 2550 lbs</span>
+</div>
+<div class="grid-3">
+<!-- DEPARTURE -->
+<div>
+<div style="font-weight:700;color:var(--accent);margin-bottom:10px;" id="dep-title">ВЫЛЕТ (Взлёт, закрылки 10°)</div>
+<div class="grid-2">
+<div class="input-group"><label>Курс ВПП (°)</label><input type="number" id="dep-rwy-hdg" value="90" oninput="recalcPlan()"></div>
+<div class="input-group"><label>Превышение аэродрома (ft)</label><input type="number" id="dep-rwy-elev" value="0" oninput="recalcPlan()"></div>
+</div>
+<table>
+<thead><tr><th>Параметр</th><th>Значение</th></tr></thead>
+<tbody>
+<tr><td>Ветер вдоль ВПП</td><td><input type="text" id="wind-comp-dep" readonly></td></tr>
+<tr><td>Боковой ветер</td><td><input type="text" id="cross-comp-dep" readonly></td></tr>
+<tr><td>Барометрическая высота</td><td><input type="text" id="palt-dep" readonly></td></tr>
+<tr><td>Дистанция разбега</td><td><input type="text" id="gr-dep" readonly></td></tr>
+<tr><td>Дистанция до 50 ft</td><td><input type="text" id="obs-dep" readonly></td></tr>
+</tbody>
+</table>
+</div>
+<!-- ARRIVAL -->
+<div>
+<div style="font-weight:700;color:var(--green);margin-bottom:10px;" id="arr-title">ПРИЛЁТ (Посадка)</div>
+<div class="grid-2">
+<div class="input-group"><label>Курс ВПП (°)</label><input type="number" id="arr-rwy-hdg" value="90" oninput="recalcPlan()"></div>
+<div class="input-group"><label>Превышение (ft)</label><input type="number" id="arr-rwy-elev" value="0" oninput="recalcPlan()"></div>
+</div>
+<div class="input-group">
+<label>Положение закрылков</label>
+<select id="arr-flaps" onchange="recalcPlan()">
+<option value="FULL">FULL</option>
+<option value="20">20° (+10%)</option>
+<option value="10">10° (+20%)</option>
+</select>
+</div>
+<table>
+<thead><tr><th>Параметр</th><th>Значение</th></tr></thead>
+<tbody>
+<tr><td>Ветер вдоль ВПП</td><td><input type="text" id="wind-comp-arr" readonly></td></tr>
+<tr><td>Боковой ветер</td><td><input type="text" id="cross-comp-arr" readonly></td></tr>
+<tr><td>Барометрическая высота</td><td><input type="text" id="palt-arr" readonly></td></tr>
+<tr><td>Дистанция пробега</td><td><input type="text" id="gr-arr" readonly></td></tr>
+<tr><td>Посадочная дистанция с 50 ft</td><td><input type="text" id="obs-arr" readonly></td></tr>
+</tbody>
+</table>
+</div>
+<!-- ALTERNATE -->
+<div>
+<div style="font-weight:700;color:var(--amber);margin-bottom:10px;" id="alt-title">ЗАПАСНОЙ (Посадка)</div>
+<div class="grid-2">
+<div class="input-group"><label>Курс ВПП (°)</label><input type="number" id="alt-rwy-hdg" value="90" oninput="recalcPlan()"></div>
+<div class="input-group"><label>Превышение (ft)</label><input type="number" id="alt-rwy-elev" value="0" oninput="recalcPlan()"></div>
+</div>
+<div class="input-group">
+<label>Положение закрылков</label>
+<select id="alt-flaps" onchange="recalcPlan()">
+<option value="FULL">FULL</option>
+<option value="20">20° (+10%)</option>
+<option value="10">10° (+20%)</option>
+</select>
+</div>
+<table>
+<thead><tr><th>Параметр</th><th>Значение</th></tr></thead>
+<tbody>
+<tr><td>Ветер вдоль ВПП</td><td><input type="text" id="wind-comp-alt" readonly></td></tr>
+<tr><td>Боковой ветер</td><td><input type="text" id="cross-comp-alt" readonly></td></tr>
+<tr><td>Барометрическая высота</td><td><input type="text" id="palt-alt" readonly></td></tr>
+<tr><td>Дистанция пробега</td><td><input type="text" id="gr-alt" readonly></td></tr>
+<tr><td>Посадочная дистанция с 50 ft</td><td><input type="text" id="obs-alt" readonly></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div style="font-size:12px;color:var(--muted);margin-top:10px;">Взлётные и посадочные дистанции интерполируются по фактическому весу (2550 / 2400 / 2200 lbs). Поправки на ветер: −10% на 9 kt встречного, +10% на 2 kt попутного. Для 20° добавлено +10%, для 10° добавлено +20% (консервативно).</div>
+</div>
+
+<div class="card">
+<div class="card-header">Заметки</div>
+<textarea id="fp-notes" style="width:100%;height:120px;background:var(--input-bg);border:1px solid var(--border);color:white;padding:15px;border-radius:8px;font-family:'Inter';font-size:15px;resize:vertical;" placeholder="Любые заметки..."></textarea>
+</div>
+</div>
+
+<!-- CONVERTERS -->
+<div id="tab-converters" class="tab-content">
+<h2 style="margin-bottom:20px;color:var(--text);">Конвертеры единиц</h2>
+<div class="grid-2">
+<div class="card">
+<div class="card-header">Вес (lbs ⇄ kg)</div>
+<div class="conv-inputs"><input type="number" id="c-w-in" placeholder="0" oninput="convWeight()"><select id="c-w-mode" onchange="convWeight()"><option value="lbs">lbs → kg</option><option value="kg">kg → lbs</option></select></div>
+<div class="conv-result" id="c-w-out">—</div>
+</div>
+<div class="card">
+<div class="card-header">Дистанция (ft ⇄ m, NM ⇄ km)</div>
+<div class="conv-inputs"><input type="number" id="c-d-in" placeholder="0" oninput="convDist()"><select id="c-d-mode" onchange="convDist()"><option value="ft">ft → m</option><option value="m">m → ft</option><option value="nm">NM → km</option><option value="km">km → NM</option></select></div>
+<div class="conv-result" id="c-d-out">—</div>
+</div>
+<div class="card">
+<div class="card-header">Температура (°F ⇄ °C)</div>
+<div class="conv-inputs"><input type="number" id="c-t-in" placeholder="0" oninput="convTemp()"><select id="c-t-mode" onchange="convTemp()"><option value="f">°F → °C</option><option value="c">°C → °F</option></select></div>
+<div class="conv-result" id="c-t-out">—</div>
+</div>
+<div class="card">
+<div class="card-header">Давление (hPa ⇄ inHg)</div>
+<div class="conv-inputs"><input type="number" id="c-p-in" placeholder="0" oninput="convPress()"><select id="c-p-mode" onchange="convPress()"><option value="hpa">hPa → inHg</option><option value="inhg">inHg → hPa</option></select></div>
+<div class="conv-result" id="c-p-out">—</div>
+</div>
+</div>
+</div>
+
+<!-- V-SPEEDS -->
+<div id="tab-vspeeds" class="tab-content">
+<div class="card">
+<div class="card-header">V-Speeds Cessna 172S (POH Section 2)</div>
+<table>
+<thead><tr><th>Скорость</th><th>Значение</th></tr></thead>
+<tbody>
+<tr><td>Vne — никогда не превышать</td><td><b>163 KIAS</b></td></tr>
+<tr><td>Vno — макс. крейсерская</td><td><b>129 KIAS</b></td></tr>
+<tr><td>Va — манёвренная (2550 lbs)</td><td><b>105 KIAS</b></td></tr>
+<tr><td>Va — манёвренная (2200 lbs)</td><td><b>98 KIAS</b></td></tr>
+<tr><td>Va — манёвренная (1900 lbs)</td><td><b>90 KIAS</b></td></tr>
+<tr><td>Vfe — макс. с закрылками 10°</td><td><b>110 KIAS</b></td></tr>
+<tr><td>Vfe — макс. с закрылками 10°-FULL</td><td><b>85 KIAS</b></td></tr>
+<tr><td>Vs — сваливание, flaps UP</td><td><b>53 KCAS</b></td></tr>
+<tr><td>Vso — сваливание, flaps FULL</td><td><b>48 KCAS</b></td></tr>
+<tr><td>Vx — макс. угол набора (SL)</td><td><b>62 KIAS</b></td></tr>
+<tr><td>Vy — макс. скорость набора (SL)</td><td><b>74 KIAS</b></td></tr>
+<tr><td>Best glide speed</td><td><b>68 KIAS</b></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- NORMAL PROCEDURES -->
+<div id="tab-normal" class="tab-content">
+<div class="proc-layout">
+<div class="proc-nav" id="normal-nav"></div>
+<div class="card" style="margin:0;">
+<div class="card-header" id="normal-header" style="font-size:20px;color:var(--text);">Выберите раздел</div>
+<div class="proc-list" id="normal-list"></div>
+</div>
+</div>
+</div>
+
+<!-- EMERGENCY PROCEDURES -->
+<div id="tab-emergency" class="tab-content">
+<div class="proc-layout">
+<div class="proc-nav" id="emergency-nav"></div>
+<div class="card" style="margin:0;border-color:var(--red);">
+<div class="card-header" id="emergency-header" style="font-size:20px;color:var(--red);">Выберите раздел</div>
+<div class="proc-list" id="emergency-list"></div>
+</div>
+</div>
+</div>
+
+</div>
+
+<script>
+// --- GLOBAL VARS ---
+let metarData = { windDir: 0, windSpd: 0, temp: 15, qnh: 1013 };
+let lastWbUnit = "lbs";
+
+// --- TABS ---
+function switchTab(tabId) {
+document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+document.getElementById('tab-' + tabId).classList.add('active');
+event.target.classList.add('active');
+}
+
+// --- PDF EXPORT ---
+function downloadPDF() {
+const element = document.getElementById('tab-plan');
+const btn = event.target;
+const originalText = btn.innerText;
+btn.innerText = "⏳ Генерация PDF...";
+btn.disabled = true;
+
+// Hide no-print elements
+const printElements = element.querySelectorAll('.no-print');
+printElements.forEach(el => el.style.display = 'none');
+
+const opt = {
+margin:       [10, 10, 10, 10],
+filename:     'Cessna_Flight_Plan.pdf',
+image:        { type: 'jpeg', quality: 0.98 },
+html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#0b1120' },
+jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+};
+
+html2pdf().set(opt).from(element).save().then(() => {
+printElements.forEach(el => el.style.display = '');
+btn.innerText = originalText;
+btn.disabled = false;
+}).catch(err => {
+console.error("PDF Error:", err);
+printElements.forEach(el => el.style.display = '');
+btn.innerText = "❌ Ошибка";
+setTimeout(() => btn.innerText = originalText, 2000);
+btn.disabled = false;
+});
+}
+
+// --- UPDATE HEADERS ---
+function updateDistHeaders() {
+const unit = document.getElementById('dist-unit').value;
+document.getElementById('th-dist-route').innerText = `Расст (${unit})`;
+document.getElementById('th-dist-alt').innerText = `Расст (${unit})`;
+}
+
+// --- CONVERT WB UNITS ---
+function convertWbUnits(newUnit) {
+if (newUnit === lastWbUnit) return;
+const factor = (newUnit === 'kg') ? (1 / 2.20462) : 2.20462;
+document.querySelectorAll('.wb-w').forEach(inp => {
+let v = parseFloat(inp.value) || 0;
+inp.value = (v * factor).toFixed(1);
+});
+lastWbUnit = newUnit;
+recalcPlan();
+}
+
+// --- METAR PARSER ---
+function applyMetar() {
+const text = document.getElementById('metar-input').value.toUpperCase();
+const status = document.getElementById('metar-status');
+metarData = { windDir: 0, windSpd: 0, temp: 15, qnh: 1013 };
+
+let windText = '';
+const windMatch = text.match(/\b(\d{3}|VRB)(\d{2,3})(?:G\d{2,3})?(KT|MPS)\b/);
+if (windMatch) {
+metarData.windDir = windMatch[1] === 'VRB' ? 0 : parseInt(windMatch[1]);
+let spd = parseInt(windMatch[2]);
+if (windMatch[3] === 'MPS') {
+spd = Math.round(spd * 1.94384);
+windText = ' (из MPS)';
+}
+metarData.windSpd = spd;
+}
+const tempMatch = text.match(/\b(M?\d{2})\/(M?\d{2})\b/);
+if (tempMatch) {
+metarData.temp = tempMatch[1].startsWith('M') ? -parseInt(tempMatch[1].substring(1)) : parseInt(tempMatch[1]);
+}
+const qnhMatch = text.match(/\b(Q(\d{4})|A(\d{4}))\b/);
+if (qnhMatch) {
+metarData.qnh = qnhMatch[2] ? parseInt(qnhMatch[2]) : Math.round(parseInt(qnhMatch[3]) * 33.8639);
+}
+
+if (metarData.windSpd > 0 || metarData.temp !== 15) {
+status.innerHTML = `✅ Ветер: ${metarData.windDir}° / ${metarData.windSpd} kts${windText} | Темп: ${metarData.temp}°C | QNH: ${metarData.qnh} hPa`;
+status.style.color = "var(--green)";
+} else {
+status.innerHTML = `⚠️ METAR не распознан или штиль.`;
+status.style.color = "var(--amber)";
+}
+recalcPlan();
+}
+
+// --- TABLES ---
+function addRouteRow(data = ["", "", "", "", "", "", ""]) {
+const tbody = document.querySelector('#route-table tbody');
+const tr = document.createElement('tr');
+tr.innerHTML = `
+<td><input type="text" value="${data[0]}" oninput="recalcPlan()"></td>
+<td><input type="number" value="${data[1]}" oninput="recalcPlan()"></td>
+<td><input type="number" value="${data[2]}" step="0.1" oninput="recalcPlan()"></td>
+<td><input type="text" value="${data[3]}" readonly></td>
+<td><input type="text" value="${data[4]}" readonly></td>
+<td><input type="text" value="${data[5]}" readonly></td>
+<td><input type="text" value="${data[6]}" readonly></td>
+`;
+tbody.appendChild(tr);
+}
+
+function addAltRouteRow(data = ["", "", "", "", "", "", ""]) {
+const tbody = document.querySelector('#alt-route-table tbody');
+const tr = document.createElement('tr');
+tr.innerHTML = `
+<td><input type="text" value="${data[0]}" oninput="recalcPlan()"></td>
+<td><input type="number" value="${data[1]}" oninput="recalcPlan()"></td>
+<td><input type="number" value="${data[2]}" step="0.1" oninput="recalcPlan()"></td>
+<td><input type="text" value="${data[3]}" readonly></td>
+<td><input type="text" value="${data[4]}" readonly></td>
+<td><input type="text" value="${data[5]}" readonly></td>
+<td><input type="text" value="${data[6]}" readonly></td>
+`;
+tbody.appendChild(tr);
+}
+
+function delRow(tableId) {
+const tbody = document.querySelector(`#${tableId} tbody`);
+if (tbody.rows.length > 1) tbody.deleteRow(-1);
+}
+
+// --- FUEL SLIDER & LIMITS ---
+function setFuel(val) {
+let v = parseFloat(val);
+if (isNaN(v)) v = 0;
+v = Math.max(0, Math.min(56, v));
+
+const rangeEl = document.getElementById('fp-fuel-range');
+const numEl = document.getElementById('fp-fuel');
+
+if (document.activeElement !== rangeEl) rangeEl.value = v;
+if (document.activeElement !== numEl) numEl.value = v;
+
+const warn = document.getElementById('fuel-warn');
+if (v > 53) {
+warn.innerHTML = "⚠️ Сверх 53 gal (невырабатываемое)";
+warn.className = "text-amber";
+} else {
+warn.innerHTML = "";
+}
+recalcPlan();
+}
+
+// --- POH PERFORMANCE TABLES ---
+const cruiseTable = {
+0: {2200: {tas: 96, gph: 7.3}, 2300: {tas: 102, gph: 7.8}, 2400: {tas: 108, gph: 8.2}, 2500: {tas: 112, gph: 8.6}, 2600: {tas: 118, gph: 9.1}, 2700: {tas: 124, gph: 9.6}},
+2000: {2200: {tas: 99, gph: 7.4}, 2300: {tas: 105, gph: 7.9}, 2400: {tas: 110, gph: 8.4}, 2500: {tas: 114, gph: 8.8}, 2600: {tas: 120, gph: 9.3}, 2700: {tas: 126, gph: 9.8}},
+4000: {2200: {tas: 102, gph: 7.5}, 2300: {tas: 108, gph: 8.0}, 2400: {tas: 112, gph: 8.6}, 2500: {tas: 116, gph: 9.0}, 2600: {tas: 122, gph: 9.5}, 2700: {tas: 128, gph: 10.0}},
+6000: {2200: {tas: 105, gph: 7.6}, 2300: {tas: 110, gph: 8.2}, 2400: {tas: 115, gph: 8.7}, 2500: {tas: 119, gph: 9.1}, 2600: {tas: 124, gph: 9.6}, 2700: {tas: 130, gph: 10.2}},
+8000: {2200: {tas: 108, gph: 7.7}, 2300: {tas: 113, gph: 8.3}, 2400: {tas: 118, gph: 8.9}, 2500: {tas: 121, gph: 9.3}, 2600: {tas: 127, gph: 9.8}, 2700: {tas: 133, gph: 10.4}},
+10000:{2200: {tas: 111, gph: 7.8}, 2300: {tas: 116, gph: 8.4}, 2400: {tas: 120, gph: 9.1}, 2500: {tas: 123, gph: 9.5}, 2600: {tas: 129, gph: 10.0}, 2700: {tas: 135, gph: 10.6}},
+12000:{2200: {tas: 114, gph: 8.0}, 2300: {tas: 119, gph: 8.6}, 2400: {tas: 123, gph: 9.3}, 2500: {tas: 126, gph: 9.8}, 2600: {tas: 132, gph: 10.3}, 2700: {tas: 138, gph: 10.9}}
+};
+
+// POH Fig. 5-5 Takeoff Tables (2550, 2400, 2200 lbs)
+const takeoffTables = {
+2550: {
+0: { 0: {gr:860, obs:1465}, 10: {gr:925, obs:1575}, 20: {gr:995, obs:1690}, 30: {gr:1070, obs:1810}, 40: {gr:1150, obs:1945} },
+2000: { 0: {gr:940, obs:1600}, 10: {gr:1010, obs:1720}, 20: {gr:1090, obs:1850}, 30: {gr:1170, obs:1990}, 40: {gr:1260, obs:2135} },
+4000: { 0: {gr:1025, obs:1755}, 10: {gr:1110, obs:1890}, 20: {gr:1195, obs:2035}, 30: {gr:1285, obs:2190}, 40: {gr:1380, obs:2355} },
+6000: { 0: {gr:1125, obs:1925}, 10: {gr:1215, obs:2080}, 20: {gr:1310, obs:2240}, 30: {gr:1410, obs:2420}, 40: {gr:1515, obs:2605} },
+8000: { 0: {gr:1235, obs:2120}, 10: {gr:1335, obs:2295}, 20: {gr:1440, obs:2480}, 30: {gr:1550, obs:2685}, 40: {gr:1660, obs:2880} }
+},
+2400: {
+0: { 0: {gr:745, obs:1275}, 10: {gr:800, obs:1370}, 20: {gr:860, obs:1470}, 30: {gr:925, obs:1570}, 40: {gr:995, obs:1685} },
+2000: { 0: {gr:810, obs:1390}, 10: {gr:875, obs:1495}, 20: {gr:940, obs:1605}, 30: {gr:1010, obs:1720}, 40: {gr:1085, obs:1845} },
+4000: { 0: {gr:885, obs:1520}, 10: {gr:955, obs:1635}, 20: {gr:1030, obs:1760}, 30: {gr:1110, obs:1890}, 40: {gr:1190, obs:2030} },
+6000: { 0: {gr:970, obs:1665}, 10: {gr:1050, obs:1795}, 20: {gr:1130, obs:1930}, 30: {gr:1215, obs:2080}, 40: {gr:1305, obs:2230} },
+8000: { 0: {gr:1065, obs:1830}, 10: {gr:1150, obs:1975}, 20: {gr:1240, obs:2130}, 30: {gr:1335, obs:2295}, 40: {gr:1430, obs:2455} }
+},
+2200: {
+0: { 0: {gr:610, obs:1055}, 10: {gr:655, obs:1130}, 20: {gr:705, obs:1205}, 30: {gr:760, obs:1290}, 40: {gr:815, obs:1380} },
+2000: { 0: {gr:665, obs:1145}, 10: {gr:720, obs:1230}, 20: {gr:770, obs:1315}, 30: {gr:830, obs:1410}, 40: {gr:890, obs:1505} },
+4000: { 0: {gr:725, obs:1250}, 10: {gr:785, obs:1340}, 20: {gr:845, obs:1435}, 30: {gr:905, obs:1540}, 40: {gr:975, obs:1650} },
+6000: { 0: {gr:795, obs:1365}, 10: {gr:860, obs:1465}, 20: {gr:925, obs:1570}, 30: {gr:995, obs:1685}, 40: {gr:1065, obs:1805} },
+8000: { 0: {gr:870, obs:1490}, 10: {gr:940, obs:1605}, 20: {gr:1010, obs:1725}, 30: {gr:1090, obs:1855}, 40: {gr:1165, obs:1975} }
+}
+};
+
+// POH Fig. 5-11 Landing Table (2550 lbs)
+const landingTable2550 = {
+0: { 0: {gr:545, obs:1290}, 10: {gr:565, obs:1320}, 20: {gr:585, obs:1350}, 30: {gr:605, obs:1380}, 40: {gr:625, obs:1415} },
+2000: { 0: {gr:565, obs:1320}, 10: {gr:585, obs:1350}, 20: {gr:605, obs:1385}, 30: {gr:625, obs:1420}, 40: {gr:650, obs:1450} },
+4000: { 0: {gr:610, obs:1385}, 10: {gr:630, obs:1425}, 20: {gr:655, obs:1460}, 30: {gr:675, obs:1495}, 40: {gr:695, obs:1530} },
+6000: { 0: {gr:655, obs:1460}, 10: {gr:680, obs:1500}, 20: {gr:705, obs:1535}, 30: {gr:725, obs:1575}, 40: {gr:750, obs:1615} },
+8000: { 0: {gr:705, obs:1545}, 10: {gr:730, obs:1585}, 20: {gr:760, obs:1625}, 30: {gr:785, obs:1665}, 40: {gr:810, obs:1705} }
+};
+
+function lookupTable(table, palt, temp) {
+let p0 = 0, p1 = 8000;
+if (palt >= 6000) { p0 = 6000; p1 = 8000; }
+else if (palt >= 4000) { p0 = 4000; p1 = 6000; }
+else if (palt >= 2000) { p0 = 2000; p1 = 4000; }
+else { p0 = 0; p1 = 2000; }
+
+let t0 = 0, t1 = 40;
+if (temp >= 30) { t0 = 30; t1 = 40; }
+else if (temp >= 20) { t0 = 20; t1 = 30; }
+else if (temp >= 10) { t0 = 10; t1 = 20; }
+else { t0 = 0; t1 = 10; }
+
+const fp = (palt - p0) / (p1 - p0 || 1);
+const ft = (temp - t0) / (t1 - t0 || 1);
+
+const c00 = table[p0][t0];
+const c01 = table[p0][t1];
+const c10 = table[p1][t0];
+const c11 = table[p1][t1];
+
+const gr = (c00.gr*(1-fp)*(1-ft)) + (c01.gr*(1-fp)*ft) + (c10.gr*fp*(1-ft)) + (c11.gr*fp*ft);
+const obs = (c00.obs*(1-fp)*(1-ft)) + (c01.obs*(1-fp)*ft) + (c10.obs*fp*(1-ft)) + (c11.obs*fp*ft);
+return { gr, obs };
+}
+
+function getTakeoffTable(palt, temp, weight) {
+let w = Math.max(2200, Math.min(2550, weight));
+if (w <= 2200) return lookupTable(takeoffTables[2200], palt, temp);
+if (w >= 2550) return lookupTable(takeoffTables[2550], palt, temp);
+if (w <= 2400) {
+const a = lookupTable(takeoffTables[2200], palt, temp);
+const b = lookupTable(takeoffTables[2400], palt, temp);
+const f = (w - 2200) / (2400 - 2200);
+return { gr: Math.round(a.gr + f*(b.gr - a.gr)), obs: Math.round(a.obs + f*(b.obs - a.obs)) };
+} else {
+const a = lookupTable(takeoffTables[2400], palt, temp);
+const b = lookupTable(takeoffTables[2550], palt, temp);
+const f = (w - 2400) / (2550 - 2400);
+return { gr: Math.round(a.gr + f*(b.gr - a.gr)), obs: Math.round(a.obs + f*(b.obs - a.obs)) };
+}
+}
+
+function getLandingTable(palt, temp, weight) {
+const base = lookupTable(landingTable2550, palt, temp);
+const wFactor = weight / 2550;
+const distFactor = Math.pow(wFactor, 1.5); // Aerodynamic approximation for landing
+return { gr: Math.round(base.gr * distFactor), obs: Math.round(base.obs * distFactor) };
+}
+
+function getCruisePerf(alt, rpm) {
+const rounds = [0, 2000, 4000, 6000, 8000, 10000, 12000];
+const rpms = [2200, 2300, 2400, 2500, 2600, 2700];
+alt = Math.max(0, Math.min(12000, alt));
+rpm = Math.max(2200, Math.min(2700, rpm));
+
+let rIdx = 0;
+for (let i = 0; i < rounds.length - 1; i++) {
+if (alt >= rounds[i] && alt <= rounds[i+1]) { rIdx = i; break; }
+}
+let aIdx = 0;
+for (let i = 0; i < rpms.length - 1; i++) {
+if (rpm >= rpms[i] && rpm <= rpms[i+1]) { aIdx = i; break; }
+}
+
+const fA = (alt - rounds[rIdx]) / (rounds[rIdx+1] - rounds[rIdx]);
+const fR = (rpm - rpms[aIdx]) / (rpms[aIdx+1] - rpms[aIdx]);
+
+const p00 = cruiseTable[rounds[rIdx]][rpms[aIdx]];
+const p10 = cruiseTable[rounds[rIdx]][rpms[aIdx+1]];
+const p01 = cruiseTable[rounds[rIdx+1]][rpms[aIdx]];
+const p11 = cruiseTable[rounds[rIdx+1]][rpms[aIdx+1]];
+
+const tas = (p00.tas*(1-fA)*(1-fR)) + (p10.tas*(1-fA)*fR) + (p01.tas*fA*(1-fR)) + (p11.tas*fA*fR);
+const gph = (p00.gph*(1-fA)*(1-fR)) + (p10.gph*(1-fA)*fR) + (p01.gph*fA*(1-fR)) + (p11.gph*fA*fR);
+
+let mcp = "65%";
+if (rpm >= 2600) mcp = "75%";
+else if (rpm >= 2500) mcp = "70%";
+else if (rpm >= 2400) mcp = "65%";
+else if (rpm >= 2300) mcp = "60%";
+else if (rpm >= 2200) mcp = "55%";
+return {tas: Math.round(tas), gph: parseFloat(gph.toFixed(2)), mcp: mcp};
+}
+
+function getClimbData(alt) {
+if (alt <= 0) return {time: 0, fuel: 0, dist: 0};
+const table = [
+{alt: 0, t: 0, f: 0, d: 0},
+{alt: 2000, t: 4, f: 0.8, d: 3},
+{alt: 4000, t: 8, f: 1.6, d: 7},
+{alt: 6000, t: 12, f: 2.6, d: 12},
+{alt: 8000, t: 17, f: 3.6, d: 18},
+{alt: 10000, t: 22, f: 4.9, d: 25},
+{alt: 12000, t: 28, f: 6.4, d: 34}
+];
+for (let i = 0; i < table.length - 1; i++) {
+if (alt >= table[i].alt && alt <= table[i+1].alt) {
+const f = (alt - table[i].alt) / (table[i+1].alt - table[i].alt);
+return {
+time: table[i].t + f * (table[i+1].t - table[i].t),
+fuel: table[i].f + f * (table[i+1].f - table[i].f),
+dist: table[i].d + f * (table[i+1].d - table[i].d)
+};
+}
+}
+return {time: 28, fuel: 6.4, dist: 34};
+}
+
+
+// --- MAIN CALCULATION ---
+function recalcPlan() {
+const arrIcao = document.getElementById('arr-icao').value || '';
+const altIcao = document.getElementById('alt-icao').value || '';
+const depIcao = document.getElementById('dep-icao').value || '';
+
+document.getElementById('arr-title').innerText = `ПРИЛЁТ ${arrIcao} (Посадка)`;
+document.getElementById('alt-title').innerText = `ЗАПАСНОЙ ${altIcao} (Посадка)`;
+document.getElementById('dep-title').innerText = `ВЫЛЕТ ${depIcao} (Взлёт, 10°)`;
+
+const rpm = parseFloat(document.getElementById('fp-rpm').value) || 2500;
+const cruiseAlt = parseFloat(document.getElementById('fp-alt').value) || 8000;
+const distUnit = document.getElementById('dist-unit').value;
+const wDir = metarData.windDir;
+const wSpd = metarData.windSpd;
+const wbUnit = document.getElementById('wb-unit').value;
+
+document.getElementById('wb-th-weight').innerText = `Вес (${wbUnit})`;
+
+// 1. PERFORMANCE
+const perf = getCruisePerf(cruiseAlt, rpm);
+document.getElementById('perf-display').innerText = `${rpm} RPM / ${cruiseAlt} ft → ${perf.mcp} MCP / ${perf.tas} KTAS / ${perf.gph} GPH`;
+document.getElementById('res-gph').innerText = perf.gph.toFixed(2) + " GPH";
+const spd = perf.tas;
+const gph = perf.gph;
+
+// 2. MAIN ROUTE CALC
+let totalDistNm = 0, totalTimeMin = 0;
+document.querySelectorAll('#route-table tbody tr').forEach(tr => {
+const inputs = tr.querySelectorAll('input');
+if (!inputs[0].value.trim()) return;
+const zmpu = parseFloat(inputs[1].value) || 0;
+let dist = parseFloat(inputs[2].value) || 0;
+let distNm = distUnit === 'km' ? dist / 1.852 : dist;
+totalDistNm += distNm;
+
+if (spd > 0) {
+const wca = Math.asin(Math.max(-1, Math.min(1, (wSpd / spd) * Math.sin((wDir - zmpu) * Math.PI / 180)))) * 180 / Math.PI;
+const hdg = (zmpu - wca + 360) % 360;
+const wdVec = (wDir + 180) % 360;
+const wx = wSpd * Math.sin(wdVec * Math.PI / 180);
+const wy = wSpd * Math.cos(wdVec * Math.PI / 180);
+const ax = spd * Math.sin(zmpu * Math.PI / 180);
+const ay = spd * Math.cos(zmpu * Math.PI / 180);
+const gs = Math.sqrt(Math.pow(ax + wx, 2) + Math.pow(ay + wy, 2));
+const tMin = (distNm / gs) * 60;
+totalTimeMin += tMin;
+const windComp = wSpd * Math.cos((wDir - zmpu) * Math.PI / 180);
+inputs[3].value = windComp > 0 ? `+${windComp.toFixed(0)} HW` : `${Math.abs(windComp).toFixed(0)} TW`;
+inputs[4].value = Math.round(hdg) + "°";
+inputs[5].value = Math.round(gs) + " kts";
+inputs[6].value = Math.round(tMin) + " min";
+}
+});
+const totalTimeHr = totalTimeMin / 60;
+let totalDistDisplay = distUnit === 'km' ? (totalDistNm * 1.852).toFixed(1) + " km" : totalDistNm.toFixed(1) + " NM";
+document.getElementById('res-total-dist').innerText = totalDistDisplay;
+document.getElementById('res-total-time').innerText = `${Math.floor(totalTimeHr)}ч ${Math.round((totalTimeHr % 1) * 60)}м`;
+
+// 3. ALTERNATE ROUTE CALC
+let altDistNm = 0, altTimeMin = 0;
+document.querySelectorAll('#alt-route-table tbody tr').forEach(tr => {
+const inputs = tr.querySelectorAll('input');
+if (!inputs[0].value.trim()) return;
+const zmpu = parseFloat(inputs[1].value) || 0;
+let dist = parseFloat(inputs[2].value) || 0;
+let distNm = distUnit === 'km' ? dist / 1.852 : dist;
+altDistNm += distNm;
+
+if (spd > 0) {
+const wca = Math.asin(Math.max(-1, Math.min(1, (wSpd / spd) * Math.sin((wDir - zmpu) * Math.PI / 180)))) * 180 / Math.PI;
+const hdg = (zmpu - wca + 360) % 360;
+const wdVec = (wDir + 180) % 360;
+const wx = wSpd * Math.sin(wdVec * Math.PI / 180);
+const wy = wSpd * Math.cos(wdVec * Math.PI / 180);
+const ax = spd * Math.sin(zmpu * Math.PI / 180);
+const ay = spd * Math.cos(zmpu * Math.PI / 180);
+const gs = Math.sqrt(Math.pow(ax + wx, 2) + Math.pow(ay + wy, 2));
+const tMin = (distNm / gs) * 60;
+altTimeMin += tMin;
+const windComp = wSpd * Math.cos((wDir - zmpu) * Math.PI / 180);
+inputs[3].value = windComp > 0 ? `+${windComp.toFixed(0)} HW` : `${Math.abs(windComp).toFixed(0)} TW`;
+inputs[4].value = Math.round(hdg) + "°";
+inputs[5].value = Math.round(gs) + " kts";
+inputs[6].value = Math.round(tMin) + " min";
+}
+});
+const altTimeHr = altTimeMin / 60;
+let altDistDisplay = distUnit === 'km' ? (altDistNm * 1.852).toFixed(1) + " km" : altDistNm.toFixed(1) + " NM";
+document.getElementById('res-alt-dist').innerText = altDistDisplay;
+document.getElementById('res-alt-time').innerText = `${Math.floor(altTimeHr)}ч ${Math.round((altTimeHr % 1) * 60)}м`;
+
+// 4. FUEL
+const fuelOnBoard = parseFloat(document.getElementById('fp-fuel').value) || 0;
+const tripFuel = totalTimeHr * gph;
+const altFuel = altTimeHr * gph;
+const reserveFuel = (45 / 60) * gph;
+const climbData = getClimbData(cruiseAlt);
+
+const taxiFuel = 1.4;
+const totalNeeded = tripFuel + altFuel + reserveFuel + climbData.fuel + taxiFuel;
+const fuelRemaining = fuelOnBoard - totalNeeded;
+
+document.getElementById('res-fuel-taxi').innerText = taxiFuel.toFixed(1) + " gal";
+document.getElementById('res-fuel-climb').innerText = climbData.fuel.toFixed(1) + " gal";
+document.getElementById('res-fuel-trip').innerText = tripFuel.toFixed(1) + " gal";
+document.getElementById('res-fuel-alt').innerText = altFuel.toFixed(1) + " gal";
+document.getElementById('res-fuel-resv').innerText = reserveFuel.toFixed(1) + " gal";
+document.getElementById('res-fuel-total').innerText = totalNeeded.toFixed(1) + " gal";
+document.getElementById('res-fuel-rem').innerText = fuelRemaining.toFixed(1) + " gal";
+
+const fStatus = document.getElementById('fuel-status');
+if (fuelRemaining >= 0) {
+fStatus.className = "status-box status-ok";
+fStatus.innerText = "✅ Топлива достаточно";
+document.getElementById('res-fuel-rem').className = "text-green";
+} else {
+fStatus.className = "status-box status-err";
+fStatus.innerText = "❌ НЕ ХВАТИТ ТОПЛИВА!";
+document.getElementById('res-fuel-rem').className = "text-red";
+}
+
+// 5. WEIGHT & BALANCE
+let tw = 1663; // always start in lbs for internal calc
+let tm = 1663 * 39.5;
+
+const emptyW = 1663;
+document.getElementById('wb-empty-w').value = wbUnit === 'kg' ? (emptyW / 2.20462).toFixed(1) : emptyW;
+
+const fuelLbs = fuelOnBoard * 6.0;
+tw += fuelLbs;
+tm += fuelLbs * 48.0;
+document.getElementById('wb-fuel-w').value = wbUnit === 'kg' ? (fuelLbs / 2.20462).toFixed(1) : fuelLbs.toFixed(1);
+document.getElementById('mom-fuel').innerText = Math.round(fuelLbs * 48.0);
+
+const wbArms = [37.0, 73.0, 95.0, 123.0];
+const wbIds = ["front", "rear", "bagA", "bagB"];
+const bagWeightsLbs = [];
+document.querySelectorAll('.wb-w').forEach((inp, i) => {
+const wInput = parseFloat(inp.value) || 0;
+const wLbs = wbUnit === 'kg' ? (wInput * 2.20462) : wInput;
+bagWeightsLbs.push(wLbs);
+tw += wLbs;
+tm += wLbs * wbArms[i];
+document.getElementById(`mom-${wbIds[i]}`).innerText = Math.round(wLbs * wbArms[i]);
+});
+
+const cg = tw > 0 ? tm / tw : 0;
+document.getElementById('res-total-weight').innerText = wbUnit === 'kg' ? (tw / 2.20462).toFixed(1) + " kg" : tw.toFixed(1) + " lbs";
+document.getElementById('res-cg').innerText = cg.toFixed(2) + " in";
+document.getElementById('perf-weight-display').innerText = `Вес: ${tw.toFixed(0)} lbs`;
+
+const wbStatus = document.getElementById('wb-status');
+let cgMin = 35.0;
+if (tw > 1950) {
+cgMin = 35.0 + ((tw - 1950) / 600) * (41.0 - 35.0);
+}
+const cgMax = 47.3;
+
+let wbWarn = [];
+if (tw > 2558) wbWarn.push("ПЕРЕГРУЗ (> 2558 lbs)");
+if (cg < cgMin) wbWarn.push("ЦГ ВПЕРЕД");
+if (cg > cgMax) wbWarn.push("ЦГ НАЗАД");
+
+const bagA = bagWeightsLbs[2];
+const bagB = bagWeightsLbs[3];
+if (bagA > 120) wbWarn.push("Багаж A > 120 lb");
+if (bagB > 50) wbWarn.push("Багаж B > 50 lb");
+if (bagA + bagB > 120) wbWarn.push("Багаж A+B > 120 lb");
+
+if (wbWarn.length > 0) {
+wbStatus.className = "status-box status-err";
+wbStatus.innerText = "❌ " + wbWarn.join("; ");
+} else {
+wbStatus.className = "status-box status-ok";
+wbStatus.innerText = "✅ В пределах нормы (POH Section 6)";
+}
+
+// 6. PERFORMANCE (TAKEOFF & LANDING) using calculated weight
+const depRwyHdg = parseFloat(document.getElementById('dep-rwy-hdg').value) || 0;
+const depElev = parseFloat(document.getElementById('dep-rwy-elev').value) || 0;
+const arrRwyHdg = parseFloat(document.getElementById('arr-rwy-hdg').value) || 0;
+const arrElev = parseFloat(document.getElementById('arr-rwy-elev').value) || 0;
+const altRwyHdg = parseFloat(document.getElementById('alt-rwy-hdg').value) || 0;
+const altElev = parseFloat(document.getElementById('alt-rwy-elev').value) || 0;
+const qnh = metarData.qnh;
+const temp = metarData.temp;
+
+// DEPARTURE (Takeoff)
+const depAngleRad = (wDir - depRwyHdg) * Math.PI / 180;
+const depHeadwind = wSpd * Math.cos(depAngleRad);
+const depCrosswind = wSpd * Math.sin(depAngleRad);
+const depPalt = depElev + (1013 - qnh) * 27.3;
+document.getElementById('wind-comp-dep').value = depHeadwind.toFixed(1) + " kts";
+document.getElementById('cross-comp-dep').value = depCrosswind.toFixed(1) + " kts";
+document.getElementById('palt-dep').value = Math.round(depPalt) + " ft";
+
+let toDist = getTakeoffTable(depPalt, temp, tw);
+let toGR = toDist.gr;
+let toObs = toDist.obs;
+
+if (depHeadwind > 0) { toGR *= (1 - (depHeadwind / 9) * 0.1); toObs *= (1 - (depHeadwind / 9) * 0.1); }
+else { toGR *= (1 + (Math.abs(depHeadwind) / 2) * 0.1); toObs *= (1 + (Math.abs(depHeadwind) / 2) * 0.1); }
+
+document.getElementById('gr-dep').value = Math.round(toGR) + " ft";
+document.getElementById('obs-dep').value = Math.round(toObs) + " ft";
+
+// ARRIVAL (Landing)
+const arrAngleRad = (wDir - arrRwyHdg) * Math.PI / 180;
+const arrHeadwind = wSpd * Math.cos(arrAngleRad);
+const arrCrosswind = wSpd * Math.sin(arrAngleRad);
+const arrPalt = arrElev + (1013 - qnh) * 27.3;
+document.getElementById('wind-comp-arr').value = arrHeadwind.toFixed(1) + " kts";
+document.getElementById('cross-comp-arr').value = arrCrosswind.toFixed(1) + " kts";
+document.getElementById('palt-arr').value = Math.round(arrPalt) + " ft";
+
+const arrFlaps = document.getElementById('arr-flaps').value;
+let arrFlapMult = 1.0;
+if (arrFlaps === '20') arrFlapMult = 1.10;
+if (arrFlaps === '10') arrFlapMult = 1.20;
+
+let ldgDist = getLandingTable(arrPalt, temp, tw);
+let ldgGR = ldgDist.gr * arrFlapMult;
+let ldgObs = ldgDist.obs * arrFlapMult;
+
+if (arrHeadwind > 0) { ldgGR *= (1 - (arrHeadwind / 9) * 0.1); ldgObs *= (1 - (arrHeadwind / 9) * 0.1); }
+else { ldgGR *= (1 + (Math.abs(arrHeadwind) / 2) * 0.1); ldgObs *= (1 + (Math.abs(arrHeadwind) / 2) * 0.1); }
+
+document.getElementById('gr-arr').value = Math.round(ldgGR) + " ft";
+document.getElementById('obs-arr').value = Math.round(ldgObs) + " ft";
+
+// ALTERNATE (Landing)
+const altAngleRad = (wDir - altRwyHdg) * Math.PI / 180;
+const altHeadwind = wSpd * Math.cos(altAngleRad);
+const altCrosswind = wSpd * Math.sin(altAngleRad);
+const altPalt = altElev + (1013 - qnh) * 27.3;
+document.getElementById('wind-comp-alt').value = altHeadwind.toFixed(1) + " kts";
+document.getElementById('cross-comp-alt').value = altCrosswind.toFixed(1) + " kts";
+document.getElementById('palt-alt').value = Math.round(altPalt) + " ft";
+
+const altFlaps = document.getElementById('alt-flaps').value;
+let altFlapMult = 1.0;
+if (altFlaps === '20') altFlapMult = 1.10;
+if (altFlaps === '10') altFlapMult = 1.20;
+
+let altLdgDist = getLandingTable(altPalt, temp, tw);
+let altLdgGR = altLdgDist.gr * altFlapMult;
+let altLdgObs = altLdgDist.obs * altFlapMult;
+
+if (altHeadwind > 0) { altLdgGR *= (1 - (altHeadwind / 9) * 0.1); altLdgObs *= (1 - (altHeadwind / 9) * 0.1); }
+else { altLdgGR *= (1 + (Math.abs(altHeadwind) / 2) * 0.1); altLdgObs *= (1 + (Math.abs(altHeadwind) / 2) * 0.1); }
+
+document.getElementById('gr-alt').value = Math.round(altLdgGR) + " ft";
+document.getElementById('obs-alt').value = Math.round(altLdgObs) + " ft";
+}
+
+// --- CONVERTERS ---
+function convWeight() {
+const v = parseFloat(document.getElementById('c-w-in').value) || 0;
+const mode = document.getElementById('c-w-mode').value;
+const res = mode === 'lbs' ? v * 0.45359237 : v * 2.20462262;
+document.getElementById('c-w-out').innerText = res.toFixed(2) + (mode === 'lbs' ? ' kg' : ' lbs');
+}
+function convDist() {
+const v = parseFloat(document.getElementById('c-d-in').value) || 0;
+const mode = document.getElementById('c-d-mode').value;
+let res = 0, unit = '';
+if (mode === 'ft') { res = v * 0.3048; unit = ' m'; }
+else if (mode === 'm') { res = v * 3.28084; unit = ' ft'; }
+else if (mode === 'nm') { res = v * 1.852; unit = ' km'; }
+else if (mode === 'km') { res = v / 1.852; unit = ' NM'; }
+document.getElementById('c-d-out').innerText = res.toFixed(2) + unit;
+}
+function convTemp() {
+const v = parseFloat(document.getElementById('c-t-in').value) || 0;
+const mode = document.getElementById('c-t-mode').value;
+const res = mode === 'f' ? (v - 32) * 5/9 : v * 9/5 + 32;
+document.getElementById('c-t-out').innerText = res.toFixed(0) + (mode === 'f' ? ' °C' : ' °F');
+}
+function convPress() {
+const v = parseFloat(document.getElementById('c-p-in').value) || 0;
+const mode = document.getElementById('c-p-mode').value;
+const res = mode === 'hpa' ? v / 33.8638866667 : v * 33.8638866667;
+document.getElementById('c-p-out').innerText = res.toFixed(2) + (mode === 'hpa' ? ' inHg' : ' hPa');
+}
+
+// --- PROCEDURES ---
+const normalProcs = {
+"Предполётный осмотр": [
+{s:"① CABIN"}, {a:"Pitot Tube Cover", r:"REMOVE"}, {a:"Pilot's Operating Handbook", r:"ACCESSIBLE"},
+{a:"Airplane Weight and Balance", r:"CHECKED"}, {a:"Parking Brake", r:"SET"}, {a:"Control Wheel Lock", r:"REMOVE"},
+{a:"MAGNETOS Switch", r:"OFF"}, {a:"AVIONICS Switch", r:"OFF"}, {a:"MASTER Switch", r:"ON"},
+{s:"② EMPENNAGE"}, {a:"Baggage Compartment Door", r:"CHECK"}, {a:"Control Surfaces", r:"CHECK"},
+{s:"③ RIGHT WING"}, {a:"Wing Tiedown", r:"DISCONNECT"}, {a:"Main Wheel Tire", r:"CHECK"},
+{s:"④ NOSE"}, {a:"Engine Oil Dipstick", r:"CHECK"}, {a:"Propeller and Spinner", r:"CHECK"}
+],
+"Перед запуском": [
+{a:"Preflight Inspection", r:"COMPLETE"}, {a:"Passenger Briefing", r:"COMPLETE"},
+{a:"Seats and Seat Belts", r:"ADJUST"}, {a:"Brakes", r:"TEST and SET"}, {a:"Circuit Breakers", r:"CHECK IN"}
+],
+"Запуск двигателя": [
+{a:"Throttle Control", r:"OPEN 1/4 INCH"}, {a:"Mixture Control", r:"IDLE CUTOFF"},
+{a:"STBY BATT Switch", r:"TEST then ARM"}, {a:"MASTER Switch", r:"ON"}, {a:"FUEL PUMP Switch", r:"ON"},
+{a:"MAGNETOS Switch", r:"START"}, {a:"Mixture Control", r:"ADVANCE TO RICH"}
+],
+"Перед взлётом": [
+{a:"Parking Brake", r:"SET"}, {a:"Seats and Seat Belts", r:"CHECK"}, {a:"Doors", r:"CLOSED & LOCKED"},
+{a:"Flight Controls", r:"FREE & CORRECT"}, {a:"Flight Instruments", r:"CHECK"}, {a:"Altimeters", r:"SET"},
+{a:"Fuel Quantity", r:"CHECK"}, {a:"Mixture Control", r:"RICH"}, {a:"FUEL SELECTOR", r:"BOTH"},
+{a:"Throttle", r:"1800 RPM"}, {a:"MAGNETOS", r:"CHECK"}, {a:"Engine Instruments", r:"CHECK"},
+{a:"Throttle", r:"1000 RPM"}, {a:"Flight Controls", r:"FREE & CORRECT"}, {a:"Trim", r:"SET FOR TAKEOFF"},
+{a:"Throttle Friction Lock", r:"ADJUST"}, {a:"Transponder", r:"SET"}
+],
+"Взлёт": [
+{a:"Wing Flaps", r:"UP - 10°"}, {a:"Throttle Control", r:"FULL"}, {a:"Elevator Control", r:"LIFT AT 55 KIAS"}
+],
+"Набор высоты": [
+{a:"Airspeed", r:"70-80 KIAS"}, {a:"Throttle", r:"FULL"}, {a:"Mixture", r:"LEAN (above 3000 ft)"},
+{a:"Flaps", r:"UP"}
+],
+"Крейсерский полёт": [
+{a:"Power", r:"2100-2700 RPM (75% max)"}, {a:"Elevator Trim", r:"ADJUST"},
+{a:"Mixture", r:"LEAN"}, {a:"Flight Controls", r:"TRIM"}
+],
+"Снижение": [
+{a:"Power", r:"AS DESIRED"}, {a:"Mixture", r:"ADJUST"}, {a:"Altimeters", r:"SET"},
+{a:"Fuel Selector", r:"BOTH"}, {a:"Flaps", r:"AS DESIRED"}
+],
+"Перед посадкой": [
+{a:"Seats and Seat Belts", r:"SECURE"}, {a:"Fuel Selector", r:"BOTH"}, {a:"Mixture", r:"RICH"},
+{a:"Landing/Taxi Lights", r:"ON"}, {a:"Autopilot", r:"OFF"}, {a:"CABIN PWR 12V", r:"OFF"}
+],
+"Посадка": [
+{a:"Airspeed", r:"65-75 KIAS (flaps UP)"}, {a:"Flaps", r:"AS DESIRED (<110 KIAS)"},
+{a:"Airspeed", r:"60-70 KIAS (full flaps)"}, {a:"Trim", r:"ADJUST"}, {a:"Touchdown", r:"MAIN WHEELS FIRST"},
+{a:"Braking", r:"MINIMUM REQUIRED"}
+],
+"Уход на второй круг": [
+{a:"Throttle", r:"FULL"}, {a:"Flaps", r:"RETRACT TO 20°"}, {a:"Airspeed", r:"60 KIAS"},
+{a:"Flaps", r:"10° then UP"}
+],
+"После посадки": [
+{a:"Flaps", r:"UP"}, {a:"Parking Brake", r:"SET"}, {a:"Throttle", r:"IDLE"},
+{a:"Electrical Equipment", r:"OFF"}, {a:"AVIONICS", r:"OFF"}, {a:"Mixture", r:"IDLE CUTOFF"},
+{a:"MAGNETOS", r:"OFF"}, {a:"MASTER", r:"OFF"}, {a:"STBY BATT", r:"OFF"}, {a:"Control Lock", r:"INSTALL"}
+]
+};
+
+const emergencyProcs = {
+"Отказ в полёте": [
+{a:"AIRSPEED", r:"68 KIAS"}, {a:"FUEL SHUTOFF Valve", r:"ON"}, {a:"FUEL SELECTOR Valve", r:"BOTH"},
+{a:"FUEL PUMP Switch", r:"ON"}, {a:"Mixture Control", r:"RICH"}, {a:"MAGNETOS Switch", r:"BOTH"}
+],
+"Отказ двигателя при разбеге": [
+{a:"Throttle", r:"IDLE"}, {a:"Brakes", r:"APPLY"}, {a:"Flaps", r:"RETRACT"},
+{a:"Mixture", r:"IDLE CUTOFF"}, {a:"MAGNETOS", r:"OFF"}, {a:"STBY BATT", r:"OFF"}, {a:"MASTER", r:"OFF"}
+],
+"Отказ двигателя после взлёта": [
+{a:"Airspeed", r:"70 KIAS (flaps UP) / 65 KIAS (flaps 10°-FULL)"}, {a:"Mixture", r:"IDLE CUTOFF"},
+{a:"FUEL SHUTOFF", r:"OFF"}, {a:"MAGNETOS", r:"OFF"}, {a:"Flaps", r:"AS REQUIRED (FULL recommended)"},
+{a:"STBY BATT", r:"OFF"}, {a:"MASTER", r:"OFF"}, {a:"Doors", r:"UNLATCH"}, {a:"Landing", r:"STRAIGHT AHEAD"}
+],
+"Аварийная посадка с неработающим двигателем": [
+{a:"Seats and Seat Belts", r:"SECURE"}, {a:"Airspeed", r:"70 KIAS (flaps UP) / 65 KIAS (flaps FULL)"},
+{a:"Mixture", r:"IDLE CUTOFF"}, {a:"FUEL SHUTOFF", r:"OFF"}, {a:"MAGNETOS", r:"OFF"},
+{a:"Flaps", r:"AS REQUIRED (FULL recommended)"}, {a:"STBY BATT", r:"OFF"}, {a:"MASTER", r:"OFF"},
+{a:"Doors", r:"UNLATCH"}, {a:"Touchdown", r:"SLIGHTLY TAIL LOW"}, {a:"Brakes", r:"MAXIMUM"}
+],
+"Пожар двигателя (на земле)": [
+{a:"MAGNETOS", r:"START (continue cranking)"}, {s:"IF ENGINE STARTS"}, {a:"Power", r:"1800 RPM"},
+{a:"Engine", r:"SHUTDOWN"}, {s:"IF ENGINE DOES NOT START"}, {a:"Throttle", r:"FULL OPEN"},
+{a:"Mixture", r:"IDLE CUTOFF"}, {a:"MAGNETOS", r:"START"}, {a:"FUEL SHUTOFF", r:"OFF"},
+{a:"FUEL PUMP", r:"OFF"}, {a:"MAGNETOS", r:"OFF"}, {a:"STBY BATT", r:"OFF"}, {a:"MASTER", r:"OFF"},
+{a:"Engine", r:"SECURE"}, {a:"Parking Brake", r:"RELEASE"}, {a:"Fire Extinguisher", r:"OBTAIN"},
+{a:"Airplane", r:"EVACUATE"}
+],
+"Пожар двигателя (в полёте)": [
+{a:"Mixture", r:"IDLE CUTOFF"}, {a:"FUEL SHUTOFF", r:"OFF"}, {a:"FUEL PUMP", r:"OFF"},
+{a:"MASTER", r:"OFF"}, {a:"Cabin Vents", r:"OPEN"}, {a:"CABIN HT and CABIN AIR", r:"OFF"},
+{a:"Airspeed", r:"100 KIAS"}, {a:"Forced Landing", r:"EXECUTE"}
+],
+"Пожар в электропроводке": [
+{a:"STBY BATT", r:"OFF"}, {a:"MASTER", r:"OFF"}, {a:"Cabin Vents", r:"CLOSE"},
+{a:"CABIN HT and CABIN AIR", r:"OFF"}, {a:"Fire Extinguisher", r:"ACTIVATE"}, {a:"AVIONICS", r:"OFF"},
+{a:"Other Switches (except MAGNETOS)", r:"OFF"}
+],
+"Штопор": [
+{a:"Throttle", r:"IDLE"}, {a:"Ailerons", r:"NEUTRAL"}, {a:"Rudder", r:"FULL OPPOSITE"},
+{a:"Control Wheel", r:"BRISKLY FORWARD"}, {a:"Controls", r:"HOLD UNTIL ROTATION STOPS"}
+],
+"Сваливание": [
+{a:"Nose", r:"LOWER"}, {a:"Ailerons", r:"NEUTRAL"}, {a:"Rudder", r:"PREVENT SPIN"},
+{a:"Controls", r:"SMOOTH RECOVERY"}
+]
+};
+
+function renderProcs(type, data, navId, headerId, listId) {
+const nav = document.getElementById(navId);
+const header = document.getElementById(headerId);
+const list = document.getElementById(listId);
+nav.innerHTML = "";
+Object.keys(data).forEach((key, idx) => {
+const btn = document.createElement('button');
+btn.innerText = key;
+if (idx === 0) btn.classList.add('active');
+btn.onclick = () => {
+document.querySelectorAll(`#${navId} button`).forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
+showProc(data[key], key, header, list);
+};
+nav.appendChild(btn);
+});
+const firstKey = Object.keys(data)[0];
+showProc(data[firstKey], firstKey, header, list);
+}
+
+function showProc(procData, title, headerEl, listEl) {
+headerEl.innerText = title;
+listEl.innerHTML = "";
+procData.forEach((item, index) => {
+if (item.s) {
+const div = document.createElement('div');
+div.className = "proc-section-title";
+div.innerText = item.s;
+listEl.appendChild(div);
+} else if (item.note) {
+const div = document.createElement('div');
+div.className = "proc-note";
+div.innerText = item.note;
+listEl.appendChild(div);
+} else {
+const label = document.createElement('label');
+label.className = "proc-item";
+label.innerHTML = `
+<input type="checkbox" onchange="this.parentElement.classList.toggle('done')">
+<div class="proc-text">
+<span class="proc-action">${item.a}</span>
+<span class="proc-resp">${item.r ? ' — ' + item.r : ''}</span>
+</div>
+`;
+listEl.appendChild(label);
+}
+});
+}
+
+// --- SAVE / LOAD ---
+function savePlan() {
+const data = {
+dep: document.getElementById('dep-icao').value,
+arr: document.getElementById('arr-icao').value,
+alt: document.getElementById('alt-icao').value,
+metar: document.getElementById('metar-input').value,
+rpm: document.getElementById('fp-rpm').value,
+fuel: document.getElementById('fp-fuel').value,
+alt_cruise: document.getElementById('fp-alt').value,
+notes: document.getElementById('fp-notes').value,
+dist_unit: document.getElementById('dist-unit').value,
+wb_unit: document.getElementById('wb-unit').value,
+dep_rwy: [document.getElementById('dep-rwy-hdg').value, document.getElementById('dep-rwy-elev').value],
+arr_rwy: [document.getElementById('arr-rwy-hdg').value, document.getElementById('arr-rwy-elev').value],
+alt_rwy: [document.getElementById('alt-rwy-hdg').value, document.getElementById('alt-rwy-elev').value],
+arr_flaps: document.getElementById('arr-flaps').value,
+alt_flaps: document.getElementById('alt-flaps').value,
+route: [],
+alt_route: []
+};
+document.querySelectorAll('#route-table tbody tr').forEach(tr => data.route.push(Array.from(tr.querySelectorAll('input')).map(i => i.value)));
+document.querySelectorAll('#alt-route-table tbody tr').forEach(tr => data.alt_route.push(Array.from(tr.querySelectorAll('input')).map(i => i.value)));
+const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url; a.download = "cessna_flight_plan.json"; a.click();
+URL.revokeObjectURL(url);
+}
+
+function loadPlan(event) {
+const file = event.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = function(e) {
+const data = JSON.parse(e.target.result);
+document.getElementById('dep-icao').value = data.dep || "";
+document.getElementById('arr-icao').value = data.arr || "";
+document.getElementById('alt-icao').value = data.alt || "";
+document.getElementById('metar-input').value = data.metar || "";
+setFuel(data.fuel || 53);
+document.getElementById('fp-rpm').value = data.rpm || 2500;
+document.getElementById('fp-alt').value = data.alt_cruise || 8000;
+document.getElementById('fp-notes').value = data.notes || "";
+document.getElementById('dist-unit').value = data.dist_unit || "NM";
+document.getElementById('wb-unit').value = data.wb_unit || "lbs";
+lastWbUnit = data.wb_unit || "lbs";
+document.getElementById('dep-rwy-hdg').value = data.dep_rwy ? data.dep_rwy[0] : 90;
+document.getElementById('dep-rwy-elev').value = data.dep_rwy ? data.dep_rwy[1] : 0;
+document.getElementById('arr-rwy-hdg').value = data.arr_rwy ? data.arr_rwy[0] : 90;
+document.getElementById('arr-rwy-elev').value = data.arr_rwy ? data.arr_rwy[1] : 0;
+document.getElementById('alt-rwy-hdg').value = data.alt_rwy ? data.alt_rwy[0] : 90;
+document.getElementById('alt-rwy-elev').value = data.alt_rwy ? data.alt_rwy[1] : 0;
+document.getElementById('arr-flaps').value = data.arr_flaps || "FULL";
+document.getElementById('alt-flaps').value = data.alt_flaps || "FULL";
+document.querySelector('#route-table tbody').innerHTML = "";
+data.route.forEach(r => addRouteRow(r));
+document.querySelector('#alt-route-table tbody').innerHTML = "";
+data.alt_route.forEach(r => addAltRouteRow(r));
+updateDistHeaders();
+applyMetar();
+};
+reader.readAsText(file);
+}
+
+// Initialize
+window.onload = () => {
+addRouteRow(); addRouteRow(); addRouteRow();
+addAltRouteRow();
+renderProcs('normal', normalProcs, 'normal-nav', 'normal-header', 'normal-list');
+renderProcs('emergency', emergencyProcs, 'emergency-nav', 'emergency-header', 'emergency-list');
+updateDistHeaders();
+recalcPlan();
+};
+</script>
+
+</body>
+</html>
